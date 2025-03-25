@@ -1,0 +1,122 @@
+.message {
+    padding: 8px 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    border-left: 3px solid #dee2e6;
+}
+
+.message.text-danger {
+    background-color: #fff3f3;
+    border-left-color: #dc3545;
+}
+
+.message.text-warning {
+    background-color: #fff8e6;
+    border-left-color: #ffc107;
+}
+
+.message.text-success {
+    background-color: #f0fff0;
+    border-left-color: #28a745;
+}
+
+.message.text-primary {
+    background-color: #f0f4ff;
+    border-left-color: #007bff;
+}
+
+#chat {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: white;
+    margin-bottom: 15px;
+}
+
+#messages {
+    padding: 10px;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+#encryptionDetails {
+    font-size: 0.9rem;
+}
+
+#encryptionDetails p {
+    margin-bottom: 0.5rem;
+}
+
+#debug {
+    font-family: monospace;
+    color: #666;
+}
+
+.input-group {
+    margin-top: 10px;
+}
+
+#messageForm {
+    border-top: 1px solid #dee2e6;
+    padding-top: 15px;
+}
+
+/* Animation for new messages */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Style for the join form */
+#joinForm {
+    max-width: 100%;
+}
+
+/* Make the chat window responsive */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 15px;
+    }
+    
+    #chat {
+        height: 300px !important;
+    }
+}
+
+/* Styling for the security analysis section */
+.security-analysis h6 {
+    margin-top: 1rem;
+    font-weight: bold;
+}
+
+.security-analysis ul {
+    padding-left: 1.5rem;
+}
+
+.security-analysis li {
+    margin-bottom: 0.5rem;
+}
+
+/* Animation for encryption process */
+@keyframes encrypt {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.encrypting {
+    animation: encrypt 1s ease-in-out;
+} 

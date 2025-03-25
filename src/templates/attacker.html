@@ -1,0 +1,645 @@
+{% extends "base.html" %}
+
+{% block title %}Attacker View{% endblock %}
+
+{% block content %}
+<style>
+:root {
+    --primary-color: #00ff41;
+    --secondary-color: #008f11;
+    --dark-bg: #0d1117;
+    --card-bg: #161b22;
+    --text-color: #e6edf3;
+    --accent-color: #58a6ff;
+    --danger-color: #f85149;
+    --warning-color: #d29922;
+    --success-color: #2ea043;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-color);
+    font-family: 'Fira Code', monospace;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid #30363d;
+    box-shadow: 0 0 20px rgba(248, 81, 73, 0.2);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: rgba(248, 81, 73, 0.1);
+    border-bottom: 1px solid var(--danger-color);
+    padding: 15px;
+}
+
+.card-header h5 {
+    color: var(--danger-color);
+    margin: 0;
+    font-size: 1.2em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* Form Controls */
+.form-control {
+    background-color: #21262d;
+    border: 1px solid var(--danger-color);
+    color: var(--text-color);
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.form-control:focus {
+    background-color: #2d333b;
+    border-color: var(--danger-color);
+    box-shadow: 0 0 10px rgba(248, 81, 73, 0.3);
+    color: var(--text-color);
+}
+
+/* Terminal Window */
+.terminal-window {
+    background: var(--dark-bg);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--danger-color);
+    margin-top: 20px;
+}
+
+.terminal-header {
+    background: #2d333b;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.terminal-button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.terminal-button.red { background-color: #ff5f56; }
+.terminal-button.yellow { background-color: #ffbd2e; }
+.terminal-button.green { background-color: #27c93f; }
+
+.terminal-title {
+    color: var(--danger-color);
+    font-size: 0.9em;
+    margin-left: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.terminal-content {
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.terminal-text {
+    color: var(--danger-color);
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+/* Progress Bars */
+.breach-progress {
+    height: 25px;
+    background-color: #21262d;
+    border: 1px solid var(--danger-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 15px 0;
+}
+
+.breach-progress-bar {
+    height: 100%;
+    background: linear-gradient(45deg, var(--danger-color), #ff8f8f);
+    width: 0%;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+/* Results Section */
+.breach-results {
+    background: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.results-container {
+    background: var(--dark-bg);
+    padding: 20px;
+    border-radius: 6px;
+}
+
+.result-item {
+    margin-bottom: 15px;
+}
+
+.result-label {
+    color: var(--danger-color);
+    font-size: 0.9em;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.result-value {
+    background: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Fira Code', monospace;
+    color: var(--text-color);
+    word-break: break-all;
+}
+
+/* Technical Details */
+.technical-details {
+    background: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.technical-details h6 {
+    color: var(--danger-color);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: rgba(248, 81, 73, 0.05);
+    border-radius: 4px;
+}
+
+.detail-label {
+    color: var(--danger-color);
+    font-size: 0.9em;
+}
+
+.detail-value {
+    color: var(--text-color);
+    font-family: 'Fira Code', monospace;
+}
+
+/* Decrypted Message Display */
+.decrypted-message-container {
+    background: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 6px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.decryption-status {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: var(--success-color);
+}
+
+.validation-success { color: var(--success-color); }
+.validation-warning { color: var(--warning-color); }
+.validation-error { color: var(--danger-color); }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Encryption Breach Simulator</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h6>How to use:</h6>
+                        <ol>
+                            <li>Enter the room name you want to attack</li>
+                            <li>Paste the target's public key (from their chat window)</li>
+                            <li>Paste an encrypted message to attempt decryption</li>
+                            <li>Select the encryption type that was used</li>
+                            <li>Click "Attempt Breach" to simulate an attack</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <form id="attackForm">
+                                <div class="mb-3">
+                                    <label for="targetRoom" class="form-label">Room Name</label>
+                                    <input type="text" class="form-control" id="targetRoom" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="targetPublicKey" class="form-label">Target's Public Key</label>
+                                    <textarea class="form-control" id="targetPublicKey" rows="3" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="targetMessage" class="form-label">Encrypted Message</label>
+                                    <textarea class="form-control" id="targetMessage" rows="3" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="targetEncryptionType" class="form-label">Encryption Type</label>
+                                    <select class="form-control" id="targetEncryptionType" required>
+                                        <optgroup label="Classical Encryption">
+                                            <option value="rsa-16">RSA (16-bit - Demo)</option>
+                                            <option value="rsa-32">RSA (32-bit - Demo)</option>
+                                            <option value="rsa-64">RSA (64-bit - Demo)</option>
+                                            <option value="rsa-128">RSA (128-bit)</option>
+                                            <option value="rsa-1024">RSA (1024-bit)</option>
+                                            <option value="rsa-2048">RSA (2048-bit)</option>
+                                            <option value="rsa-4096">RSA (4096-bit)</option>
+                                        </optgroup>
+                                        <optgroup label="Post-Quantum Encryption">
+                                            <option value="kyber-512">Kyber-512 (Level 1)</option>
+                                            <option value="kyber-768">Kyber-768 (Level 3)</option>
+                                            <option value="kyber-1024">Kyber-1024 (Level 5)</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-danger w-100" onclick="initiateBreachAttempt()">
+                                    <i class="fas fa-shield-alt"></i> Attempt Breach
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="terminal-window">
+                                <div class="terminal-header">
+                                    <span class="terminal-button red"></span>
+                                    <span class="terminal-button yellow"></span>
+                                    <span class="terminal-button green"></span>
+                                    <span class="terminal-title">Breach Terminal</span>
+                                </div>
+                                <div class="terminal-content">
+                                    <div class="terminal-text" id="terminalOutput">
+                                        System ready... Awaiting breach attempt...<span class="blink">_</span>
+                                    </div>
+                                    <div id="terminalHistory"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Add new terminal window for brute force details -->
+                            <div class="terminal-window mt-3">
+                                <div class="terminal-header">
+                                    <span class="terminal-button red"></span>
+                                    <span class="terminal-button yellow"></span>
+                                    <span class="terminal-button green"></span>
+                                    <span class="terminal-title">Decryption Attempts</span>
+                                </div>
+                                <div class="terminal-content">
+                                    <div id="decryptionHistory"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="breach-progress-section mt-3">
+                                <h6 class="text-danger">Attack Progress</h6>
+                                <div class="breach-progress">
+                                    <div class="breach-progress-bar" id="breachProgress">
+                                        <span class="progress-text">0%</span>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="text-danger mt-3">Key Space Coverage</h6>
+                                <div class="breach-progress">
+                                    <div class="breach-progress-bar" id="keySpaceProgress">
+                                        <span class="progress-text">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="technical-details mt-4" id="technicalDetails" style="display: none;">
+                        <h6>Technical Details</h6>
+                        <div class="detail-item">
+                            <span class="detail-label">Encryption Type:</span>
+                            <span class="detail-value" id="encryptionType">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Time Taken:</span>
+                            <span class="detail-value" id="timeTaken">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Success:</span>
+                            <span class="detail-value" id="success">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Notes:</span>
+                            <span class="detail-value" id="notes">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="decrypted-message-container" id="decryptedMessageContainer" style="display: none;">
+                        <h6 class="text-danger">Decrypted Message</h6>
+                        <div class="result-value" id="decryptedMessage">-</div>
+                        <div class="decryption-status" id="decryptionStatus">
+                            <span class="validation-success">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+const socket = io();
+
+// Initialize breach simulation variables
+let breachTimer = null;
+let startTime = null;
+let attemptCounter = 0;
+let lastAttemptCount = 0;
+let attemptsPerSecond = 0;
+let successCounter = 0;
+let keySpaceTotal = 0;
+let intervalSpeed = 100;
+
+// Add simulation control variables
+let simulationStopped = false;
+
+function updateTerminalHistory(message) {
+    const historyDiv = document.getElementById('terminalHistory');
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = 'terminal-text';
+    entry.innerHTML = `[${timestamp}] ${message}`;
+    historyDiv.appendChild(entry);
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+}
+
+function updateTargetAnalysis(encryptionType) {
+    const bits = parseInt(encryptionType.split('-')[1]);
+    const type = encryptionType.split('-')[0];
+    
+    let difficulty, timeEstimate, attackVector;
+    
+    if (type === 'rsa') {
+        if (bits <= 64) {
+            difficulty = 'Easy (Demo)';
+            timeEstimate = 'Seconds';
+            attackVector = 'Brute Force';
+        } else if (bits <= 128) {
+            difficulty = 'Medium';
+            timeEstimate = 'Minutes';
+            attackVector = 'Factorization';
+        } else {
+            difficulty = 'Impossible';
+            timeEstimate = 'Years+';
+            attackVector = 'None Available';
+        }
+    } else if (type === 'kyber') {
+        difficulty = 'Quantum Resistant';
+        timeEstimate = 'Not Possible';
+        attackVector = 'No Known Attacks';
+    }
+    
+    updateTerminalHistory(`📊 Target Analysis:`);
+    updateTerminalHistory(`   • Key Strength: ${difficulty}`);
+    updateTerminalHistory(`   • Est. Time: ${timeEstimate}`);
+    updateTerminalHistory(`   • Attack Vector: ${attackVector}`);
+}
+
+function updateProgress() {
+    const currentTime = Date.now();
+    const timeElapsed = (currentTime - startTime) / 1000; // in seconds
+    
+    // Calculate attempts per second
+    attemptsPerSecond = Math.floor((attemptCounter - lastAttemptCount) * (1000 / intervalSpeed));
+    lastAttemptCount = attemptCounter;
+    
+    // Update progress bars
+    const progressPercent = Math.min(100, (attemptCounter / keySpaceTotal) * 100);
+    const keySpacePercent = Math.min(100, (successCounter / keySpaceTotal) * 100);
+    
+    document.getElementById('breachProgress').style.width = `${progressPercent}%`;
+    document.getElementById('keySpaceProgress').style.width = `${keySpacePercent}%`;
+    
+    // Update terminal with progress
+    if (attemptCounter % 10 === 0) {
+        updateTerminalHistory(`🔄 Attempts: ${attemptCounter.toLocaleString()} (${attemptsPerSecond}/s)`);
+    }
+    
+    // Increment counters
+    attemptCounter += Math.floor(Math.random() * 1000) + 100;
+    if (Math.random() < 0.01) successCounter++;
+    
+    // Continue updates if not stopped
+    if (!simulationStopped) {
+        breachTimer = setTimeout(updateProgress, intervalSpeed);
+    }
+}
+
+function stopSimulation() {
+    simulationStopped = true;
+    if (breachTimer) {
+        clearTimeout(breachTimer);
+        breachTimer = null;
+    }
+    updateDecryptionHistory('Simulation stopped', 'info');
+}
+
+function startBreachAttempt() {
+    // Reset simulation state
+    simulationStopped = false;
+    if (breachTimer) {
+        clearTimeout(breachTimer);
+    }
+    
+    // Clear previous decryption history
+    document.getElementById('decryptionHistory').innerHTML = '';
+    updateDecryptionHistory('Starting brute force attempts...', 'info');
+    
+    startTime = Date.now();
+    attemptCounter = 0;
+    lastAttemptCount = 0;
+    successCounter = 0;
+    
+    const encryptionType = document.getElementById('targetEncryptionType').value;
+    const [type, bits] = encryptionType.split('-');
+    
+    // Set key space total based on encryption type
+    if (type === 'rsa') {
+        keySpaceTotal = Math.pow(2, parseInt(bits));
+        updateDecryptionHistory(`Key space size: 2^${bits} possible values`, 'info');
+    } else {
+        keySpaceTotal = Number.MAX_SAFE_INTEGER;
+        updateDecryptionHistory('Quantum-resistant encryption - no known attacks', 'info');
+    }
+    
+    // Start progress updates
+    updateProgress();
+}
+
+// Handle socket connection
+socket.on('connect', () => {
+    updateTerminalHistory('🌐 Connected to server');
+});
+
+socket.on('disconnect', () => {
+    updateTerminalHistory('❌ Disconnected from server');
+});
+
+socket.on('error', (error) => {
+    updateTerminalHistory(`❌ Error: ${error}`);
+});
+
+function initiateBreachAttempt() {
+    const room = document.getElementById('targetRoom').value.trim();
+    const publicKey = document.getElementById('targetPublicKey').value.trim();
+    const message = document.getElementById('targetMessage').value.trim();
+    const encryptionType = document.getElementById('targetEncryptionType').value;
+    
+    // Validate all required fields
+    if (!room || !publicKey || !message) {
+        updateTerminalHistory('❌ Error: Please fill in all required fields');
+        // Show error messages under each empty field
+        if (!room) {
+            document.getElementById('targetRoom').classList.add('is-invalid');
+        }
+        if (!publicKey) {
+            document.getElementById('targetPublicKey').classList.add('is-invalid');
+        }
+        if (!message) {
+            document.getElementById('targetMessage').classList.add('is-invalid');
+        }
+        return;
+    }
+    
+    // Clear any previous error styling
+    document.getElementById('targetRoom').classList.remove('is-invalid');
+    document.getElementById('targetPublicKey').classList.remove('is-invalid');
+    document.getElementById('targetMessage').classList.remove('is-invalid');
+    
+    // Reset and hide results sections
+    document.getElementById('technicalDetails').style.display = 'none';
+    document.getElementById('decryptedMessageContainer').style.display = 'none';
+    document.getElementById('breachProgress').style.width = '0%';
+    document.getElementById('keySpaceProgress').style.width = '0%';
+    
+    // Update terminal with attempt initialization
+    updateTerminalHistory('🔒 Initializing breach attempt...');
+    updateTerminalHistory(`📡 Target Room: ${room}`);
+    updateTerminalHistory(`🔑 Encryption Type: ${encryptionType}`);
+    
+    // Update target analysis
+    updateTargetAnalysis(encryptionType);
+    
+    // Show progress section
+    document.querySelector('.breach-progress-section').classList.add('active');
+    
+    // Start the breach attempt
+    socket.emit('breach_attempt', {
+        room: room,
+        public_key: publicKey,
+        encrypted_message: message,
+        encryption_type: encryptionType
+    });
+    
+    // Start the simulation
+    startBreachAttempt();
+}
+
+// Add input validation event listeners
+document.getElementById('targetRoom').addEventListener('input', function() {
+    this.classList.remove('is-invalid');
+});
+document.getElementById('targetPublicKey').addEventListener('input', function() {
+    this.classList.remove('is-invalid');
+});
+document.getElementById('targetMessage').addEventListener('input', function() {
+    this.classList.remove('is-invalid');
+});
+
+// Add new function for updating decryption history
+function updateDecryptionHistory(message, type = 'attempt') {
+    const historyDiv = document.getElementById('decryptionHistory');
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = 'terminal-text';
+    
+    let icon = '🔄';
+    let color = 'var(--text-color)';
+    
+    if (type === 'success') {
+        icon = '✅';
+        color = 'var(--success-color)';
+    } else if (type === 'fail') {
+        icon = '❌';
+        color = 'var(--danger-color)';
+    } else if (type === 'info') {
+        icon = 'ℹ️';
+        color = 'var(--accent-color)';
+    }
+    
+    entry.innerHTML = `<span style="color: ${color}">[${timestamp}] ${icon} ${message}</span>`;
+    historyDiv.appendChild(entry);
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+}
+
+// Add socket handler for decryption progress
+socket.on('decryption_progress', function(data) {
+    if (!simulationStopped) {
+        const { attempt, current_d, decrypted, valid } = data;
+        let message = `Attempt ${attempt}: d=${current_d}, Result: ${decrypted}`;
+        updateDecryptionHistory(message, valid ? 'success' : 'attempt');
+    }
+});
+
+// Update breach result handler
+socket.on('breach_result', function(data) {
+    // Stop the simulation first
+    stopSimulation();
+    
+    // Show the results sections
+    document.getElementById('technicalDetails').style.display = 'block';
+    document.getElementById('decryptedMessageContainer').style.display = 'block';
+    
+    // Update technical details
+    document.getElementById('encryptionType').textContent = data.encryption_type;
+    document.getElementById('timeTaken').textContent = data.time_taken;
+    document.getElementById('success').textContent = data.success ? 'Yes' : 'No';
+    document.getElementById('notes').textContent = data.notes;
+    
+    // Update decrypted message section
+    document.getElementById('decryptedMessage').textContent = data.decrypted_message || 'Decryption failed';
+    document.getElementById('decryptionStatus').innerHTML = data.success ? 
+        '<span class="validation-success">✓ Successfully decrypted</span>' :
+        '<span class="validation-error">✗ Decryption failed</span>';
+    
+    // Update terminal
+    updateTerminalHistory(data.success ? 
+        '🔓 Breach successful! Message decrypted.' :
+        '🛡️ Breach failed. Encryption remains secure.');
+    
+    // Add final messages
+    if (data.success) {
+        updateTerminalHistory(`✨ Final attempt count: ${attemptCounter.toLocaleString()}`);
+        updateDecryptionHistory('Decryption successful! Found correct private key.', 'success');
+    } else {
+        updateDecryptionHistory('Decryption failed. Could not find valid private key.', 'fail');
+    }
+});
+</script>
+{% endblock %} 

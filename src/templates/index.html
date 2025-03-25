@@ -1,0 +1,1578 @@
+{% extends "base.html" %}
+
+{% block title %}Quantum Crypto Chat{% endblock %}
+
+{% block content %}
+<style>
+:root {
+    --primary-color: #00ff41;
+    --secondary-color: #008f11;
+    --dark-bg: #0d1117;
+    --card-bg: #161b22;
+    --text-color: #e6edf3;
+    --accent-color: #58a6ff;
+    --danger-color: #f85149;
+    --warning-color: #d29922;
+    --success-color: #2ea043;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-color);
+    font-family: 'Fira Code', monospace;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid #30363d;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+}
+
+.card-header {
+    background-color: rgba(0, 255, 65, 0.05);
+    border-bottom: 1px solid #30363d;
+}
+
+.form-control {
+    background-color: #21262d;
+    border: 1px solid #30363d;
+    color: var(--text-color);
+}
+
+.form-control:focus {
+    background-color: #2d333b;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 255, 65, 0.25);
+    color: var(--text-color);
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-color);
+    color: var(--dark-bg);
+    box-shadow: 0 0 15px var(--primary-color);
+}
+
+/* Chat UI Styles */
+#chat {
+    height: 500px;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: var(--card-bg);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--secondary-color) var(--card-bg);
+}
+
+#chat::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat::-webkit-scrollbar-track {
+    background: var(--card-bg);
+}
+
+#chat::-webkit-scrollbar-thumb {
+    background-color: var(--secondary-color);
+    border-radius: 4px;
+}
+
+.message {
+    max-width: 80%;
+    margin: 8px 0;
+    padding: 10px 15px;
+    border-radius: 12px;
+    position: relative;
+    word-wrap: break-word;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message.sent {
+    align-self: flex-end;
+    background-color: rgba(0, 255, 65, 0.1);
+    border: 1px solid var(--secondary-color);
+    margin-left: auto;
+}
+
+.message.received {
+    align-self: flex-start;
+    background-color: rgba(88, 166, 255, 0.1);
+    border: 1px solid var(--accent-color);
+    margin-right: auto;
+}
+
+.message .sender {
+    font-size: 0.8em;
+    color: var(--accent-color);
+    margin-bottom: 4px;
+}
+
+.message .content {
+    color: var(--text-color);
+}
+
+/* Encryption Details Panel */
+.encryption-panel {
+    background-color: var(--card-bg);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.encryption-panel h5 {
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--secondary-color);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.encryption-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    background-color: rgba(0, 255, 65, 0.05);
+    border: 1px solid var(--secondary-color);
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.stat-item h6 {
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.stat-item p {
+    margin: 0;
+    font-size: 0.85em;
+    color: var(--text-color);
+}
+
+/* Attacker Mode Styles */
+.attacker-panel {
+    background-color: rgba(248, 81, 73, 0.1);
+    border: 1px solid var(--danger-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.attacker-panel h5 {
+    color: var(--danger-color);
+    border-bottom: 1px solid var(--danger-color);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.breach-progress {
+    height: 25px;
+    background-color: #21262d;
+    border: 1px solid var(--danger-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.breach-progress-bar {
+    height: 100%;
+    background: linear-gradient(45deg, var(--danger-color), #ff8f8f);
+    width: 0%;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.breach-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(0, 0, 0, 0.1) 10px,
+        rgba(0, 0, 0, 0.1) 20px
+    );
+    animation: moveStripes 1s linear infinite;
+}
+
+@keyframes moveStripes {
+    from { background-position: 0 0; }
+    to { background-position: 28px 28px; }
+}
+
+.breach-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.breach-stat {
+    background-color: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 4px;
+    padding: 8px;
+    text-align: center;
+}
+
+.breach-stat h6 {
+    color: var(--danger-color);
+    margin-bottom: 5px;
+    font-size: 0.8em;
+}
+
+.breach-stat p {
+    margin: 0;
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+/* Terminal-like elements */
+.terminal-text {
+    font-family: 'Fira Code', monospace;
+    color: var(--primary-color);
+    background-color: var(--dark-bg);
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    position: relative;
+}
+
+.terminal-text::before {
+    content: '>';
+    color: var(--primary-color);
+    margin-right: 8px;
+}
+
+.blink {
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+/* Status messages */
+.status-message {
+    text-align: center;
+    margin: 10px 0;
+    padding: 5px;
+    color: var(--accent-color);
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+.error-message {
+    text-align: center;
+    margin: 10px 0;
+    padding: 5px;
+    color: var(--danger-color);
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+/* Warning tooltips */
+.message.warning::after {
+    content: "⚠️";
+    position: absolute;
+    right: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: help;
+}
+
+.message.warning .tooltip {
+    visibility: hidden;
+    background-color: var(--card-bg);
+    color: var(--warning-color);
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--warning-color);
+    position: absolute;
+    z-index: 1;
+    right: -35px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    width: 250px;
+    font-size: 0.8em;
+}
+
+.message.warning:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Add loading animation */
+.loading {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.loading div {
+    position: absolute;
+    border: 4px solid var(--primary-color);
+    opacity: 1;
+    border-radius: 50%;
+    animation: loading 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.loading div:nth-child(2) {
+    animation-delay: -0.5s;
+}
+
+@keyframes loading {
+    0% {
+        top: 36px;
+        left: 36px;
+        width: 0;
+        height: 0;
+        opacity: 1;
+    }
+    100% {
+        top: 0px;
+        left: 0px;
+        width: 72px;
+        height: 72px;
+        opacity: 0;
+    }
+}
+
+/* Add new styles for enhanced attacker mode */
+.terminal-window {
+    background: var(--dark-bg);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--danger-color);
+}
+
+.terminal-header {
+    background: #2d333b;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.terminal-button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 6px;
+    display: inline-block;
+}
+
+.terminal-button.red { background-color: #ff5f56; }
+.terminal-button.yellow { background-color: #ffbd2e; }
+.terminal-button.green { background-color: #27c93f; }
+
+.terminal-title {
+    color: var(--text-color);
+    font-size: 0.8em;
+    margin-left: 10px;
+}
+
+.terminal-content {
+    padding: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.terminal-history {
+    margin-top: 10px;
+    font-size: 0.85em;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.breach-details .breach-progress-container {
+    background: rgba(248, 81, 73, 0.05);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--danger-color);
+}
+
+.breach-progress {
+    position: relative;
+    height: 25px;
+}
+
+.breach-progress-bar {
+    position: relative;
+}
+
+.progress-text {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-color);
+    font-size: 0.8em;
+    text-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.breach-stat {
+    background: rgba(248, 81, 73, 0.05);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--danger-color);
+    height: 100%;
+}
+
+.breach-stat h6 {
+    color: var(--danger-color);
+    font-size: 0.8em;
+    margin-bottom: 10px;
+}
+
+.breach-stat p {
+    font-size: 1.2em;
+    margin-bottom: 5px;
+}
+
+.breach-stat small {
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.detail-card {
+    background: rgba(248, 81, 73, 0.05);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--danger-color);
+    height: 100%;
+}
+
+.detail-card h6 {
+    color: var(--danger-color);
+    font-size: 0.8em;
+    margin-bottom: 10px;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    margin-right: 5px;
+}
+
+.badge-primary {
+    background-color: var(--primary-color);
+    color: var(--dark-bg);
+}
+
+.badge-info {
+    background-color: var(--accent-color);
+    color: var(--dark-bg);
+}
+
+.key-list {
+    background: rgba(248, 81, 73, 0.05);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--danger-color);
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.found-key {
+    padding: 8px;
+    border-bottom: 1px solid rgba(248, 81, 73, 0.2);
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85em;
+}
+
+.found-key:last-child {
+    border-bottom: none;
+}
+
+.found-key .timestamp {
+    color: var(--accent-color);
+    margin-right: 10px;
+}
+
+.found-key .key-value {
+    color: var(--primary-color);
+}
+
+/* Add these new styles for the breach simulator */
+.breach-setup {
+    background: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.target-analysis {
+    background: var(--card-bg);
+    height: 100%;
+}
+
+.analysis-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: rgba(248, 81, 73, 0.05);
+    border-radius: 4px;
+}
+
+.analysis-label {
+    color: var(--danger-color);
+    font-size: 0.9em;
+}
+
+.analysis-value {
+    color: var(--text-color);
+    font-family: 'Fira Code', monospace;
+}
+
+.breach-results {
+    background: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.results-container {
+    background: var(--dark-bg);
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.result-item {
+    margin-bottom: 10px;
+}
+
+.result-label {
+    display: block;
+    color: var(--danger-color);
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.result-value {
+    display: block;
+    padding: 8px;
+    background: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-family: 'Fira Code', monospace;
+    word-break: break-all;
+}
+
+#startBreachBtn {
+    width: 100%;
+    padding: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+#startBreachBtn:hover {
+    background-color: var(--danger-color);
+    box-shadow: 0 0 15px var(--danger-color);
+}
+
+.breach-progress-section {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.breach-progress-section.active {
+    opacity: 1;
+}
+
+/* Add new styles for enhanced decryption display */
+.decrypted-message-container {
+    background: rgba(0, 255, 65, 0.05);
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.decryption-status {
+    font-size: 0.9em;
+    color: var(--primary-color);
+}
+
+.decryption-details {
+    background: rgba(248, 81, 73, 0.05);
+    border: 1px solid var(--danger-color);
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.result-value {
+    font-family: 'Fira Code', monospace;
+    font-size: 1em;
+    line-height: 1.5;
+    word-break: break-all;
+}
+
+.validation-success {
+    color: var(--success-color);
+}
+
+.validation-warning {
+    color: var(--warning-color);
+}
+
+.validation-error {
+    color: var(--danger-color);
+}
+</style>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Join Chat</h5>
+            </div>
+            <div class="card-body">
+                <form id="joinForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="room" class="form-label">Room</label>
+                        <input type="text" class="form-control" id="room" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="encryption-type">Encryption Type:</label>
+                        <select class="form-control" id="encryption-type">
+                            <option value="rsa">RSA (Classical)</option>
+                            <option value="kyber">Kyber (Post-Quantum)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="key-size-group">
+                        <label for="key-size">Key Size:</label>
+                        <select class="form-control" id="key-size">
+                            <!-- RSA key sizes -->
+                            <optgroup label="RSA Key Sizes" class="rsa-options">
+                                <option value="16">16 bits (Instant Break)</option>
+                                <option value="32">32 bits (Very Fast Break)</option>
+                                <option value="64">64 bits (Fast Break)</option>
+                                <option value="128">128 bits (Quick Break)</option>
+                                <option value="1024">1024 bits (Legacy)</option>
+                                <option value="2048" selected>2048 bits (Standard)</option>
+                                <option value="4096">4096 bits (Extra Security)</option>
+                            </optgroup>
+                            <!-- Kyber security levels -->
+                            <optgroup label="Kyber Security Levels" class="kyber-options" style="display:none">
+                                <option value="kyber512">Kyber-512 (Level 1)</option>
+                                <option value="kyber768">Kyber-768 (Level 3)</option>
+                                <option value="kyber1024">Kyber-1024 (Level 5)</option>
+                            </optgroup>
+                        </select>
+                        <small class="form-text text-warning" id="key-size-warning" style="display:none">
+                            Warning: Key sizes below 2048 bits are for educational purposes only!
+                            <ul>
+                                <li>16-bit keys: Break instantly</li>
+                                <li>32-bit keys: Break in milliseconds</li>
+                                <li>64-bit keys: Break in seconds</li>
+                                <li>128-bit keys: Break in minutes</li>
+                            </ul>
+                        </small>
+                    </div>
+                    <div class="form-group" id="kyber-mode-group" style="display:none">
+                        <label for="kyber-mode">Kyber Implementation:</label>
+                        <select class="form-control" id="kyber-mode">
+                            <option value="simulated">Simulated (Classical Crypto)</option>
+                            <option value="lattice">Lattice-based (Educational)</option>
+                        </select>
+                        <small class="form-text text-muted">
+                            Simulated mode uses classical cryptography to demonstrate Kyber's behavior.
+                            Lattice-based mode uses actual post-quantum operations (slower but educational).
+                        </small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Join</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Chat</h5>
+            </div>
+            <div class="card-body">
+                <div id="chat" class="mb-3" style="height: 400px; overflow-y: auto;">
+                    <div id="messages"></div>
+                </div>
+                <form id="messageForm" style="display: none;">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="message" placeholder="Type your message...">
+                        <button class="btn btn-primary" type="submit">Send</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Encryption Details</h5>
+            </div>
+            <div class="card-body">
+                <div id="encryptionDetails">
+                    <p><strong>Status:</strong> <span id="status">Not connected</span></p>
+                    <p><strong>Encryption Type:</strong> <span id="currentEncryption">-</span></p>
+                    <p><strong>Security Level:</strong> <span id="securityLevel">-</span></p>
+                    <p><strong>My Public Key:</strong> <small><code id="myPublicKey" style="word-break: break-all;">-</code></small></p>
+                    <p><strong>Latest Encrypted Message:</strong> <small><code id="lastEncryptedMessage" style="word-break: break-all;">-</code></small></p>
+                    <button id="copyPublicKey" class="btn btn-sm btn-secondary" onclick="copyToClipboard('myPublicKey')">Copy Public Key</button>
+                    <button id="copyEncryptedMsg" class="btn btn-sm btn-secondary" onclick="copyToClipboard('lastEncryptedMessage')">Copy Encrypted Message</button>
+                    <p><strong>Debug:</strong> <span id="debug">-</span></p>
+                </div>
+                <div class="encryption-stats">
+                    <div class="stat-item">
+                        <h6>Encryption Status</h6>
+                        <p id="encryptionStatus">Initializing...</p>
+                    </div>
+                    <div class="stat-item">
+                        <h6>Security Level</h6>
+                        <p id="securityLevel">-</p>
+                    </div>
+                    <div class="stat-item">
+                        <h6>Message Count</h6>
+                        <p id="messageCount">0</p>
+                    </div>
+                    <div class="stat-item">
+                        <h6>Active Users</h6>
+                        <p id="activeUsers">1</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add link to Attacker View -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Breach Simulator</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Want to test the security of the encryption? Try our breach simulator!</p>
+                <a href="/attacker" class="btn btn-danger">
+                    <i class="fas fa-shield-alt"></i> Open Breach Simulator
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const socket = io();
+
+// Initialize important DOM elements
+const chatMessages = document.getElementById('messages');
+const connectionStatus = document.getElementById('status');
+const joinForm = document.getElementById('joinForm');
+const messageForm = document.getElementById('messageForm');
+const messageInput = document.getElementById('message');
+const chatInterface = document.getElementById('chat').parentElement;
+
+// Initialize state variables
+let currentUser = null;
+let currentRoom = null;
+let userKeys = {};  // Store keys for all users in the room
+let currentEncryptionType = null;
+
+function updateDebug(message) {
+    document.getElementById('debug').textContent = message;
+}
+
+// Socket event handlers
+socket.on('connect', function() {
+    console.log('Connected to server');
+    connectionStatus.textContent = 'Connected';
+    connectionStatus.style.color = 'green';
+});
+
+socket.on('disconnect', function() {
+    console.log('Disconnected from server');
+    connectionStatus.textContent = 'Disconnected';
+    connectionStatus.style.color = 'red';
+});
+
+socket.on('error', function(data) {
+    console.error('Error:', data.message);
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message text-danger';
+    errorDiv.textContent = 'Error: ' + data.message;
+    chatMessages.appendChild(errorDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Only show alert for non-recoverable errors
+    if (!data.recoverable) {
+        alert(data.message);
+    }
+});
+
+socket.on('user_joined', function(data) {
+    console.log('User joined:', data);
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'status-message';
+    statusDiv.textContent = data.username + ' joined the chat';
+    chatMessages.appendChild(statusDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Store user's public key
+    userKeys[data.username] = data.public_key;
+    
+    // Update active users count
+    updateActiveUsers(Object.keys(userKeys).length + 1);
+    
+    // Show message form if we have other users
+    if (Object.keys(userKeys).length > 0) {
+        messageForm.style.display = 'block';
+    }
+    
+    // Update encryption details
+    if (data.username === currentUser) {
+        document.getElementById('myPublicKey').textContent = data.public_key;
+        const encType = currentEncryptionType === 'rsa' ? 
+            `RSA (${document.getElementById('key-size').value} bits)` : 
+            `Kyber (${document.getElementById('key-size').value})`;
+        document.getElementById('currentEncryption').textContent = encType;
+        
+        // Update security level
+        updateSecurityLevel(document.getElementById('key-size').options[document.getElementById('key-size').selectedIndex].text);
+        
+        // Update encryption status
+        updateEncryptionStatus('Active');
+    }
+});
+
+socket.on('user_left', function(data) {
+    console.log('User left:', data);
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'status-message';
+    statusDiv.textContent = data.username + ' left the chat';
+    chatMessages.appendChild(statusDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Remove user's public key
+    delete userKeys[data.username];
+    
+    // Update active users count
+    updateActiveUsers(Object.keys(userKeys).length + 1);
+    
+    // Hide message form if no other users
+    if (Object.keys(userKeys).length === 0) {
+        messageForm.style.display = 'none';
+        const waitingDiv = document.createElement('div');
+        waitingDiv.className = 'status-message';
+        waitingDiv.textContent = 'Waiting for other users to join...';
+        chatMessages.appendChild(waitingDiv);
+    }
+});
+
+// Add this function to check message length
+function getMessageBitLength(message) {
+    // Convert message to UTF-8 bytes
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(message);
+    return bytes.length * 8; // Convert bytes to bits
+}
+
+// Add this function to get current key size
+function getCurrentKeySize() {
+    const encryptionType = document.getElementById('encryption-type').value;
+    const keySize = document.getElementById('key-size').value;
+    if (encryptionType === 'rsa') {
+        return parseInt(keySize);
+    } else if (encryptionType === 'kyber') {
+        // Kyber key sizes are more complex
+        // They are based on the MLWE problem parameters
+        switch(keySize) {
+            case 'kyber512':
+                return 512;  // Corresponds to AES-128 security level
+            case 'kyber768':
+                return 768;  // Corresponds to AES-192 security level
+            case 'kyber1024':
+                return 1024; // Corresponds to AES-256 security level
+            default:
+                return 512;
+        }
+    }
+    return 512; // Default fallback
+}
+
+// Add this function to get maximum message length for current encryption
+function getMaxMessageLength(keySize) {
+    const encryptionType = document.getElementById('encryption-type').value;
+    
+    if (encryptionType === 'kyber') {
+        // Kyber has specific message size limits based on security level
+        // In practice, Kyber uses a fixed-size message space
+        switch(document.getElementById('key-size').value) {
+            case 'kyber512':
+                return 128; // 16 bytes for AES-128 equivalent security
+            case 'kyber768':
+                return 192; // 24 bytes for AES-192 equivalent security
+            case 'kyber1024':
+                return 256; // 32 bytes for AES-256 equivalent security
+            default:
+                return 128;
+        }
+    } else {
+        // RSA message length limits
+        if (keySize <= 16) {
+            return 16;  // 2 bytes for demo
+        } else if (keySize <= 32) {
+            return 32;  // 4 bytes for demo
+        } else if (keySize <= 64) {
+            return 64;  // 8 bytes for demo
+        } else if (keySize <= 128) {
+            return 128; // 16 bytes for demo
+        } else if (keySize <= 1024) {
+            return keySize - 128; // Reserve 128 bits for padding
+        } else {
+            return keySize - 256; // Reserve 256 bits for padding
+        }
+    }
+}
+
+// Add this function to format bit sizes nicely with security level info
+function formatBitSize(bits, includeSecurityInfo = false) {
+    const bytes = Math.floor(bits / 8);
+    let result = `${bits} bits (${bytes} bytes)`;
+    
+    if (includeSecurityInfo) {
+        const encryptionType = document.getElementById('encryption-type').value;
+        const keySize = document.getElementById('key-size').value;
+        
+        if (encryptionType === 'kyber') {
+            switch(keySize) {
+                case 'kyber512':
+                    result += ' - AES-128 equivalent security';
+                    break;
+                case 'kyber768':
+                    result += ' - AES-192 equivalent security';
+                    break;
+                case 'kyber1024':
+                    result += ' - AES-256 equivalent security';
+                    break;
+            }
+        }
+    }
+    
+    return result;
+}
+
+// Modify the message event handler
+socket.on('message', function(data) {
+    console.log('Message received:', data);
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message ' + (data.is_self ? 'sent' : 'received');
+    
+    let messageHTML = '';
+    if (!data.is_self) {
+        messageHTML += `<div class="sender">${data.sender}</div>`;
+    }
+    messageHTML += `<div class="content">${data.message}</div>`;
+    
+    // Check if message exceeds bit limit
+    const messageBits = getMessageBitLength(data.message);
+    const keySize = getCurrentKeySize();
+    const maxBits = getMaxMessageLength(keySize);
+    
+    if (messageBits > maxBits) {
+        msgDiv.className += ' warning';
+        messageHTML += `<span class="tooltip">Message length ${formatBitSize(messageBits)} exceeds encryption limit ${formatBitSize(maxBits, true)}. Full encryption not possible.</span>`;
+    }
+    
+    msgDiv.innerHTML = messageHTML;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Update encryption details if message is encrypted
+    if (data.encrypted) {
+        document.getElementById('lastEncryptedMessage').textContent = data.encrypted;
+    }
+    
+    // Update message count
+    updateMessageCount();
+    
+    // If message is encrypted and we're in attacker mode, start breach attempt
+    if (data.encrypted && document.getElementById('attackerPanel').style.display === 'none') {
+        startBreachAttempt();
+    }
+});
+
+// Modify the message form submission
+messageForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const message = messageInput.value.trim();
+    
+    if (message && currentRoom) {
+        const messageBits = getMessageBitLength(message);
+        const keySize = getCurrentKeySize();
+        const maxBits = getMaxMessageLength(keySize);
+        
+        // Add warning for messages that exceed bit limit
+        if (messageBits > maxBits) {
+            if (!confirm(`Warning: Message length ${formatBitSize(messageBits)} exceeds encryption limit ${formatBitSize(maxBits)}. The message may not be fully encrypted. Do you want to send anyway?`)) {
+                return;
+            }
+        }
+        
+        // Send message to server
+        socket.emit('message', {
+            message: message,
+            room: currentRoom
+        });
+        
+        // Clear input
+        messageInput.value = '';
+    }
+    
+    return false;
+});
+
+// Modify the real-time message length validation
+messageInput.addEventListener('input', function() {
+    const message = this.value.trim();
+    const messageBits = getMessageBitLength(message);
+    const keySize = getCurrentKeySize();
+    const maxBits = getMaxMessageLength(keySize);
+    
+    // Update UI to show current message length
+    const remainingBits = maxBits - messageBits;
+    const debug = document.getElementById('debug');
+    if (messageBits > 0) {
+        const encryptionType = document.getElementById('encryption-type').value;
+        debug.textContent = `Message length: ${formatBitSize(messageBits)} (${formatBitSize(remainingBits)} remaining)`;
+        if (encryptionType === 'kyber') {
+            debug.textContent += ` [${document.getElementById('key-size').value} security level]`;
+        }
+        
+        if (remainingBits < 0) {
+            debug.style.color = '#dc3545';  // red
+        } else if (remainingBits < maxBits * 0.2) { // Warning when less than 20% remaining
+            debug.style.color = '#ffc107';  // yellow
+        } else {
+            debug.style.color = '#28a745';  // green
+        }
+    } else {
+        debug.textContent = '-';
+        debug.style.color = 'inherit';
+    }
+});
+
+// Handle join form submission
+joinForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value.trim();
+    const room = document.getElementById('room').value.trim();
+    const encryptionType = document.getElementById('encryption-type').value;
+    const keySize = document.getElementById('key-size').value;
+    const kyberMode = document.getElementById('kyber-mode').value;
+    
+    if (!username || !room) {
+        alert('Please enter both username and room name');
+        return;
+    }
+    
+    currentUser = username;
+    currentRoom = room;
+    currentEncryptionType = encryptionType;
+    
+    // Emit join event
+    socket.emit('join', {
+        username: username,
+        room: room,
+        encryption_type: encryptionType,
+        key_size: keySize,
+        kyber_mode: kyberMode
+    });
+    
+    // Hide join form and show chat interface
+    joinForm.parentElement.parentElement.style.display = 'none';
+    chatInterface.style.display = 'block';
+    
+    // Show waiting message
+    const waitingDiv = document.createElement('div');
+    waitingDiv.className = 'text-muted';
+    waitingDiv.textContent = 'Waiting for other users to join...';
+    chatMessages.appendChild(waitingDiv);
+    
+    return false;
+});
+
+// Handle encryption type change
+document.getElementById('encryption-type').addEventListener('change', function() {
+    const keySize = document.getElementById('key-size');
+    const rsaOptions = keySize.querySelector('.rsa-options');
+    const kyberOptions = keySize.querySelector('.kyber-options');
+    const kyberModeGroup = document.getElementById('kyber-mode-group');
+    
+    if (this.value === 'kyber') {
+        rsaOptions.style.display = 'none';
+        kyberOptions.style.display = 'block';
+        kyberModeGroup.style.display = 'block';
+        keySize.value = 'kyber512';
+    } else {
+        rsaOptions.style.display = 'block';
+        kyberOptions.style.display = 'none';
+        kyberModeGroup.style.display = 'none';
+        keySize.value = '2048';
+    }
+    
+    // Update security level
+    updateSecurityLevel(document.getElementById('key-size').options[document.getElementById('key-size').selectedIndex].text);
+});
+
+// Show/hide key size warning
+document.getElementById('key-size').addEventListener('change', function() {
+    const warning = document.getElementById('key-size-warning');
+    const keySize = parseInt(this.value);
+    if (!isNaN(keySize) && keySize < 2048) {
+        warning.style.display = 'block';
+    } else {
+        warning.style.display = 'none';
+    }
+    
+    // Update security level
+    updateSecurityLevel(this.options[this.selectedIndex].text);
+});
+
+// Add copy to clipboard functionality
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        element.style.animation = 'copyFlash 0.5s';
+        setTimeout(() => element.style.animation = '', 500);
+        updateDebug(`Copied ${elementId} to clipboard`);
+    }).catch(function(err) {
+        updateDebug(`Failed to copy ${elementId}: ${err}`);
+    });
+}
+
+// Add these new functions after your existing JavaScript code
+function updateEncryptionStatus(status) {
+    const statusElement = document.getElementById('encryptionStatus');
+    statusElement.textContent = status;
+    statusElement.style.color = status === 'Active' ? 'var(--success-color)' : 'var(--warning-color)';
+}
+
+function updateSecurityLevel(level) {
+    const securityElement = document.getElementById('securityLevel');
+    let color = 'var(--success-color)';
+    if (level.includes('Break')) {
+        color = 'var(--danger-color)';
+    } else if (level.includes('Legacy')) {
+        color = 'var(--warning-color)';
+    }
+    securityElement.textContent = level;
+    securityElement.style.color = color;
+}
+
+function updateMessageCount() {
+    const count = document.getElementById('messageCount');
+    count.textContent = parseInt(count.textContent) + 1;
+}
+
+function updateActiveUsers(count) {
+    document.getElementById('activeUsers').textContent = count;
+}
+
+// Replace the attacker mode functions with enhanced versions
+let breachTimer = null;
+let startTime = null;
+let attemptCounter = 0;
+let lastAttemptCount = 0;
+let attemptsPerSecond = 0;
+let successCounter = 0;
+let keySpaceTotal = 0;
+let intervalSpeed = 100; // Update interval in ms
+
+function calculateKeySpace(keySize) {
+    const encryptionType = document.getElementById('encryption-type').value;
+    if (encryptionType === 'rsa') {
+        return Math.pow(2, parseInt(keySize));
+    } else {
+        // For Kyber, use the security level as basis
+        switch(document.getElementById('key-size').value) {
+            case 'kyber512': return Math.pow(2, 128); // AES-128 equivalent
+            case 'kyber768': return Math.pow(2, 192); // AES-192 equivalent
+            case 'kyber1024': return Math.pow(2, 256); // AES-256 equivalent
+            default: return Math.pow(2, 128);
+        }
+    }
+}
+
+function formatLargeNumber(num) {
+    if (num >= 1e21) return num.toExponential(2);
+    const units = ['', 'K', 'M', 'B', 'T', 'Q'];
+    const order = Math.floor(Math.log10(num) / 3);
+    if (order < units.length) {
+        const unitValue = num / Math.pow(10, order * 3);
+        return unitValue.toFixed(1) + units[order];
+    }
+    return num.toExponential(2);
+}
+
+function updateTerminalHistory(message) {
+    const history = document.getElementById('terminalHistory');
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+    history.appendChild(entry);
+    history.scrollTop = history.scrollHeight;
+}
+
+function startBreachAttempt() {
+    // Reset all counters and displays
+    attemptCounter = 0;
+    lastAttemptCount = 0;
+    successCounter = 0;
+    startTime = new Date();
+    
+    // Get encryption details
+    const encryptionType = document.getElementById('targetEncryptionType').value;
+    const [type, size] = encryptionType.split('-');
+    keySpaceTotal = calculateKeySpace(size);
+    
+    // Update displays
+    document.getElementById('keySpaceSize').textContent = formatLargeNumber(keySpaceTotal);
+    document.getElementById('breachProgress').style.width = '0%';
+    document.getElementById('keySpaceProgress').style.width = '0%';
+    
+    // Show results section
+    document.getElementById('breachResults').style.display = 'none';
+    document.getElementById('foundKeysSection').style.display = 'none';
+    
+    // Start the simulation
+    updateBreachTimer();
+    simulateBreachProgress();
+    
+    // Log start in terminal
+    updateTerminalHistory('Initializing cryptanalysis attack...');
+    updateTerminalHistory(`Target Room: ${document.getElementById('targetRoom').value}`);
+    updateTerminalHistory(`Encryption: ${type.toUpperCase()}-${size}`);
+    updateTerminalHistory(`Key space size: ${formatLargeNumber(keySpaceTotal)} combinations`);
+}
+
+function updateBreachTimer() {
+    if (!startTime) return;
+    
+    const now = new Date();
+    const diff = now - startTime;
+    
+    // Update elapsed time
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    document.getElementById('timeElapsed').textContent = 
+        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    // Calculate attempts per second
+    attemptsPerSecond = Math.round((attemptCounter - lastAttemptCount) * (1000 / intervalSpeed));
+    lastAttemptCount = attemptCounter;
+    document.getElementById('attemptsPerSecond').textContent = `${formatLargeNumber(attemptsPerSecond)}/s`;
+    
+    // Estimate time remaining
+    const progress = attemptCounter / keySpaceTotal;
+    if (progress > 0) {
+        const timeRemaining = (diff / progress) - diff;
+        const remainingHours = Math.floor(timeRemaining / 3600000);
+        const remainingMinutes = Math.floor((timeRemaining % 3600000) / 60000);
+        document.getElementById('estimatedTimeRemaining').textContent = 
+            `Est. remaining: ${remainingHours}h ${remainingMinutes}m`;
+    }
+    
+    breachTimer = setTimeout(updateBreachTimer, intervalSpeed);
+}
+
+function simulateBreachProgress() {
+    const keySize = parseInt(document.getElementById('key-size').value);
+    const isRSA = document.getElementById('encryption-type').value === 'rsa';
+    
+    function getProgressIncrement() {
+        if (isRSA) {
+            if (keySize <= 16) return 0.5;
+            if (keySize <= 32) return 0.1;
+            if (keySize <= 64) return 0.01;
+            if (keySize <= 128) return 0.001;
+            return 0.0001;
+        }
+        return 0.0001; // Slower progress for Kyber
+    }
+    
+    function updateProgress() {
+        // Increment attempt counter based on key size
+        const increment = getProgressIncrement();
+        attemptCounter += Math.floor(keySpaceTotal * increment);
+        
+        // Update attempt count display
+        document.getElementById('attemptCount').textContent = formatLargeNumber(attemptCounter);
+        
+        // Calculate and update progress percentage
+        const progress = Math.min((attemptCounter / keySpaceTotal) * 100, 100);
+        document.getElementById('breachProgress').style.width = `${progress}%`;
+        document.getElementById('breachProgress').querySelector('.progress-text').textContent = 
+            `${progress.toFixed(1)}%`;
+        
+        // Update key space coverage
+        document.getElementById('keySpaceProgress').textContent = 
+            `${(progress).toFixed(1)}% covered`;
+        document.getElementById('keySpaceProgress').style.width = `${progress}%`;
+        
+        // Simulate finding keys based on key size
+        const findingProbability = isRSA ? 
+            (keySize <= 32 ? 0.1 : keySize <= 64 ? 0.01 : 0.001) : 0.0001;
+        
+        if (Math.random() < findingProbability) {
+            successCounter++;
+            const successRate = (successCounter / attemptCounter) * 100;
+            document.getElementById('successRate').textContent = `${successRate.toFixed(1)}%`;
+            document.getElementById('successCount').textContent = `${successCounter} hits`;
+            
+            // Log success in terminal
+            updateTerminalHistory(`Found potential key match! Testing validity...`);
+            
+            // Show found key in the key list
+            const foundKeysSection = document.getElementById('foundKeysSection');
+            const foundKeysList = document.getElementById('foundKeysList');
+            foundKeysSection.style.display = 'block';
+            
+            const keyEntry = document.createElement('div');
+            keyEntry.className = 'found-key';
+            keyEntry.innerHTML = `
+                <span class="timestamp">[${new Date().toLocaleTimeString()}]</span>
+                <span class="key-value">Key${successCounter}: ${Math.random().toString(16).substr(2, 8)}</span>
+            `;
+            foundKeysList.appendChild(keyEntry);
+            foundKeysList.scrollTop = foundKeysList.scrollHeight;
+        }
+        
+        // Update terminal text
+        const terminalText = document.querySelector('.terminal-text');
+        terminalText.innerHTML = `Analyzing encryption patterns... Progress: ${progress.toFixed(1)}%<span class="blink">_</span>`;
+        
+        // Continue if not complete
+        if (progress < 100) {
+            setTimeout(updateProgress, intervalSpeed);
+        } else {
+            updateTerminalHistory('Attack completed. Analysis finished.');
+            clearTimeout(breachTimer);
+        }
+    }
+    
+    updateProgress();
+}
+
+// Add these new functions for the breach simulator
+function initiateBreachAttempt() {
+    const room = document.getElementById('targetRoom').value;
+    const publicKey = document.getElementById('targetPublicKey').value;
+    const message = document.getElementById('targetMessage').value;
+    const encryptionType = document.getElementById('targetEncryptionType').value;
+    
+    if (!room || !publicKey || !message) {
+        updateTerminalHistory('Error: Please fill in all required fields');
+        return;
+    }
+    
+    // Update target analysis
+    updateTargetAnalysis(encryptionType);
+    
+    // Show progress section
+    document.querySelector('.breach-progress-section').classList.add('active');
+    
+    // Start the breach attempt
+    startBreachAttempt();
+}
+
+function updateTargetAnalysis(encryptionType) {
+    const [type, size] = encryptionType.split('-');
+    let keyStrength, estimatedTime, attackVector, successProb;
+    
+    if (type === 'rsa') {
+        switch(size) {
+            case '16':
+                keyStrength = 'Very Weak (Educational)';
+                estimatedTime = 'Instant';
+                attackVector = 'Brute Force';
+                successProb = 'Guaranteed';
+                break;
+            case '32':
+                keyStrength = 'Weak (Educational)';
+                estimatedTime = 'Milliseconds';
+                attackVector = 'Brute Force';
+                successProb = 'Very High';
+                break;
+            case '64':
+                keyStrength = 'Weak (Educational)';
+                estimatedTime = 'Seconds';
+                attackVector = 'Brute Force';
+                successProb = 'High';
+                break;
+            case '128':
+                keyStrength = 'Weak';
+                estimatedTime = 'Minutes';
+                attackVector = 'Brute Force';
+                successProb = 'Moderate';
+                break;
+            case '1024':
+                keyStrength = 'Legacy';
+                estimatedTime = 'Years';
+                attackVector = 'Number Field Sieve';
+                successProb = 'Very Low';
+                break;
+            case '2048':
+                keyStrength = 'Strong';
+                estimatedTime = 'Millennia';
+                attackVector = 'Number Field Sieve';
+                successProb = 'Extremely Low';
+                break;
+            case '4096':
+                keyStrength = 'Very Strong';
+                estimatedTime = 'Impractical';
+                attackVector = 'Number Field Sieve';
+                successProb = 'Nearly Impossible';
+                break;
+        }
+    } else if (type === 'kyber') {
+        switch(size) {
+            case '512':
+                keyStrength = 'Quantum Resistant (Level 1)';
+                estimatedTime = 'Post-Quantum Protected';
+                attackVector = 'Lattice Reduction';
+                successProb = 'Quantum Resistant';
+                break;
+            case '768':
+                keyStrength = 'Quantum Resistant (Level 3)';
+                estimatedTime = 'Post-Quantum Protected';
+                attackVector = 'Lattice Reduction';
+                successProb = 'Quantum Resistant';
+                break;
+            case '1024':
+                keyStrength = 'Quantum Resistant (Level 5)';
+                estimatedTime = 'Post-Quantum Protected';
+                attackVector = 'Lattice Reduction';
+                successProb = 'Quantum Resistant';
+                break;
+        }
+    }
+    
+    document.getElementById('keyStrength').textContent = keyStrength;
+    document.getElementById('estimatedTime').textContent = estimatedTime;
+    document.getElementById('attackVector').textContent = attackVector;
+    document.getElementById('successProbability').textContent = successProb;
+}
+
+// Update the simulateBreachProgress function to handle successful breaches
+function handleSuccessfulBreach() {
+    const message = document.getElementById('targetMessage').value;
+    const encryptionType = document.getElementById('targetEncryptionType').value;
+    const [type, size] = encryptionType.split('-');
+    
+    // Show the results section
+    document.getElementById('breachResults').style.display = 'block';
+    
+    // Generate a fake private key for demonstration
+    const fakePrivateKey = Array.from({length: 32}, () => 
+        Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+    ).join('');
+    document.getElementById('foundPrivateKey').textContent = fakePrivateKey;
+    
+    // Handle decryption based on encryption type and size
+    if (type === 'rsa' && parseInt(size) <= 64) {
+        try {
+            // For demo RSA with small keys, show partial decryption
+            const decoded = atob(message);
+            const decryptedMsg = decoded.substring(0, 8) + '...';
+            
+            document.getElementById('decryptedMessage').textContent = decryptedMsg;
+            document.getElementById('decryptionStatus').innerHTML = 
+                '<span class="validation-success">✓ Successfully decrypted first 8 bytes</span>';
+            
+            // Update decryption details
+            document.getElementById('originalLength').textContent = `${message.length} bytes (base64)`;
+            document.getElementById('decryptedLength').textContent = `${decoded.length} bytes`;
+            document.getElementById('charEncoding').textContent = 'UTF-8';
+            document.getElementById('validationStatus').innerHTML = 
+                '<span class="validation-success">Valid UTF-8 encoding detected</span>';
+            
+        } catch (e) {
+            document.getElementById('decryptedMessage').textContent = 'Error: Invalid base64 message';
+            document.getElementById('decryptionStatus').innerHTML = 
+                '<span class="validation-error">✗ Failed to decode message</span>';
+            
+            // Update decryption details with error
+            document.getElementById('originalLength').textContent = `${message.length} bytes (base64)`;
+            document.getElementById('decryptedLength').textContent = 'N/A';
+            document.getElementById('charEncoding').textContent = 'Unknown';
+            document.getElementById('validationStatus').innerHTML = 
+                '<span class="validation-error">Invalid message format</span>';
+        }
+    } else if (type === 'rsa') {
+        // For larger RSA keys
+        document.getElementById('decryptedMessage').textContent = 
+            'Decryption not possible - key size too large for demonstration';
+        document.getElementById('decryptionStatus').innerHTML = 
+            '<span class="validation-warning">⚠ Key size exceeds demo limits</span>';
+        
+        // Update decryption details
+        document.getElementById('originalLength').textContent = `${message.length} bytes (base64)`;
+        document.getElementById('decryptedLength').textContent = 'N/A';
+        document.getElementById('charEncoding').textContent = 'N/A';
+        document.getElementById('validationStatus').innerHTML = 
+            '<span class="validation-warning">Key size: ' + size + ' bits (too large for demo)</span>';
+    } else {
+        // For Kyber
+        document.getElementById('decryptedMessage').textContent = 
+            'Quantum-resistant encryption cannot be broken';
+        document.getElementById('decryptionStatus').innerHTML = 
+            '<span class="validation-success">✓ Encryption remains secure</span>';
+        
+        // Update decryption details
+        document.getElementById('originalLength').textContent = `${message.length} bytes (encrypted)`;
+        document.getElementById('decryptedLength').textContent = 'N/A';
+        document.getElementById('charEncoding').textContent = 'N/A';
+        document.getElementById('validationStatus').innerHTML = 
+            '<span class="validation-success">Quantum-resistant: ' + size + '</span>';
+    }
+    
+    updateTerminalHistory('🔓 Breach attempt completed. Check results panel for details.');
+}
+</script>
+{% endblock %} 
